@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="utf-8">
-    <title>テスト</title>
-    <link rel="stylesheet" type="text/css" href="https://localhost/static/style.css?20220117">
+<meta charset="utf-8">
+<title>{{.Title}}</title>
+<link rel="stylesheet" type="text/css" href="/static/style.css?20220117">
 </head>
 
 <body>
-<h1>テスト</h1>
+<header><h1><a href="/" class="header-logo">みたやつ</a></h1></header>
+
+<div class="contents">
+  <img class="contents-thumbnail" src="/static/images/{{.Title}}" alt="{{.Title}}">
+  <h2 class="contents-title">{{.Title}}</h1>
+  <div class="contents-data">
+    <div>オススメ度　　{{.Star}}</div>
+    <div>オススメの人　{{.Recommend}}</div>
+    <div>必要時間　　　{{.Time}}</div>
+    <div>見た場所　　　{{.Media}}</div>
+  </div>
+  <h3>感想</h3>
+  <p class="contents-comment">{{.Comment}}</p>
+</div>
 </body>
