@@ -16,12 +16,14 @@ type Contents struct {
 }
 
 func main() {
+	handleAdmin()
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.HandleFunc("/", router)
+	http.HandleFunc("/", contents)
+	http.HandleFunc("/api/upload", upload)
 	http.ListenAndServe(":80", nil)
 }
 
-func router(w http.ResponseWriter, req *http.Request) {
+func contents(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 
 	if path == "/" {
