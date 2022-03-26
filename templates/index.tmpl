@@ -12,7 +12,7 @@
 <h2 class="index-list-title">{{ $key }}</h2>
     <ul>
     {{ range $i, $v := $value }}
-    <li><a href="/{{$v.Title}}"><img class="index-thumbnail" src="/static/images/{{$v.Title}}" alt="{{$v.Title}}" id="{{$key}}-{{$i}}"></a></li>
+    <li><a href="/{{$v.Title}}"><img class="index-thumbnail" src="/images/{{$v.Title}}" alt="{{$v.Title}}" id="{{$key}}-{{$i}}"></a></li>
     {{end}}
     </ul>
 {{end}}

@@ -27,7 +27,6 @@ ul {
     padding: 0;
     list-style: none;
     display: flex;
-    overflow-x: scroll;
 }
 
 li {
@@ -54,10 +53,7 @@ li {
 
 .contents-data {
     font-size: small;
-    width: 30%;
-    text-align: left;
-    margin-left: 40%;
-    margin-right: auto;
+    text-align: center;
 }
 
 .contents-comment {
