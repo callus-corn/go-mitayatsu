@@ -1,12 +1,17 @@
 package main
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 )
 
 type Contents struct {
@@ -19,12 +24,21 @@ type Review struct {
 	Text  string
 }
 
+var authToken string
+var authTimeLimit time.Time
+
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("no args")
+		return
+	}
+	authToken = os.Args[1]
+	authTimeLimit = time.Now().Add(30 * time.Minute)
+
 	http.HandleFunc("/", serveHTTP)
 	http.HandleFunc("/static/", serveStatic)
 	http.HandleFunc("/images/", serveImage)
 	http.HandleFunc("/api/upload", upload)
-	http.HandleFunc("/api/auth", auth)
 	http.ListenAndServe(":80", nil)
 }
 
@@ -86,11 +100,11 @@ func serveContents(w http.ResponseWriter, req *http.Request) {
 
 func getContentsList() []Contents {
 	result := []Contents{}
-	file, err := os.ReadFile("contentsdata/contents.json")
+	fileData, err := os.ReadFile("contentsdata/contents.json")
 	if err != nil {
 		return result
 	}
-	err = json.Unmarshal(file, &result)
+	err = json.Unmarshal(fileData, &result)
 	if err != nil {
 		return result
 	}
@@ -108,11 +122,12 @@ func getContents(title string) (Contents, error) {
 }
 
 func getReview(title string) (Review, error) {
-	text, err := os.ReadFile("contentsdata/review/" + title)
+	file, err := os.ReadFile("contentsdata/review/" + title)
 	if err != nil {
 		return Review{}, err
 	}
-	return Review{Title: title, Text: string(text)}, nil
+	text := strings.Replace(string(file), "\n", "<br>", -1)
+	return Review{Title: title, Text: text}, nil
 }
 
 func serveStatic(w http.ResponseWriter, req *http.Request) {
@@ -123,6 +138,63 @@ func serveImage(w http.ResponseWriter, req *http.Request) {
 	http.StripPrefix("/images/", http.FileServer(http.Dir("contentsdata/images"))).ServeHTTP(w, req)
 }
 
-func upload(w http.ResponseWriter, req *http.Request) {}
+func upload(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "POST" {
+		return
+	}
+	if err := req.ParseMultipartForm(1 << 30); err != nil {
+		return
+	}
+	if authTimeLimit.Before(time.Now()) {
+		return
+	}
+	if req.FormValue("token") != authToken {
+		return
+	}
 
-func auth(w http.ResponseWriter, req *http.Request) {}
+	file, header, err := req.FormFile("contents")
+	if err != nil {
+		return
+	}
+	zipFile, err := os.Create(header.Filename)
+	if err != nil {
+		return
+	}
+	defer zipFile.Close()
+	_, err = io.Copy(zipFile, file)
+	if err != nil {
+		return
+	}
+
+	reader, err := zip.OpenReader(header.Filename)
+	if err != nil {
+		return
+	}
+	defer reader.Close()
+
+	if err = os.Mkdir("contentsdata", os.ModeDir); err != nil {
+		return
+	}
+	for _, f := range reader.File {
+		if f.Mode().IsDir() {
+			continue
+		}
+		destPath := filepath.Join("contentsdata", f.Name)
+		if err = os.MkdirAll(filepath.Dir(destPath), f.Mode()); err != nil {
+			return
+		}
+		readCloser, err := f.Open()
+		if err != nil {
+			return
+		}
+		defer readCloser.Close()
+		destFile, err := os.Create(destPath)
+		if err != nil {
+			return
+		}
+		defer destFile.Close()
+		if _, err = io.Copy(destFile, readCloser); err != nil {
+			return
+		}
+	}
+}
